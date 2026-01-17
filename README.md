@@ -1,4 +1,4 @@
-# Hope AI
+# AI (Awsome Inteligence)
 
 Welcome! I have been wanting to do this project for a while. We are going to call it "Hope AI" - a conversational AI assistant built to provide intelligent, context-aware responses and interactions, powered by **GitHub Copilot API**.
 
