@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Backend server for Chat AI with GitHub Copilot integration",
   "main": "server.js",
-  "engines": {
-    "node": ">=14.x"
+    "engines": {
+      "node": ">=14.x"
+    }
   }
   
