@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: hope-ai
+    name: Awesome Intelligence -ai
     runtime: node
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
