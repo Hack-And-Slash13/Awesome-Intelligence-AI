@@ -1,10 +1,10 @@
-# Chat AI
+# Hope AI
 
-A conversational AI assistant built to provide intelligent, context-aware responses and interactions, powered by **GitHub Copilot API**.
+Welcome! I have been wanting to do this project for a while. We are going to call it "Hope AI" - a conversational AI assistant built to provide intelligent, context-aware responses and interactions, powered by **GitHub Copilot API**.
 
 ## Overview
 
-This project implements a modern chat-based AI system with a beautiful web interface and robust backend. The AI leverages GitHub Copilot's advanced language models to deliver helpful, accurate, and engaging conversations in real-time.
+This project implements a modern chat-based AI system with a beautiful web interface and robust backend. The AI leverages GitHub Copilot's advanced language models to deliver helpful, accurate, and engaging conversations in real-time. More updates and features will be added later, but right now we are making a simple AI chatbot.
 
 ## ✨ Features
 
