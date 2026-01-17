@@ -7,6 +7,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Check for required environment variables at startup
+if (!process.env.GITHUB_TOKEN) {
+    console.warn('⚠️  WARNING: GITHUB_TOKEN is not set! Set it in Render dashboard or .env file.');
+    console.warn('🔗 Get token at: https://github.com/settings/tokens (enable "Models" scope)');
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
