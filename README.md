@@ -1,6 +1,6 @@
-# AI (Awsome Inteligence)
+# Awesome Intelligence AI
 
-Welcome! I have been wanting to do this project for a while. We are going to call it "Hope AI" - a conversational AI assistant built to provide intelligent, context-aware responses and interactions, powered by **GitHub Models API**.
+Welcome! I have been wanting to do this project for a while. We are going to call it "Awesome Intelligence AI" - a conversational AI assistant built to provide intelligent, context-aware responses and interactions, powered by **GitHub Models API**.
 
 ## Overview
 
