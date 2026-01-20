@@ -9,10 +9,6 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 // Check for required environment variables at startup
 if (!process.env.GITHUB_TOKEN) {
     console.warn('⚠️  WARNING: GITHUB_TOKEN is not set! Set it in Render dashboard or .env file.');
