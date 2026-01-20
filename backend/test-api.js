@@ -1,6 +1,8 @@
 const axios = require('axios');
 require('dotenv').config();
 
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
 async function testGitHubModels() {
     try {
         console.log('='.repeat(50));
