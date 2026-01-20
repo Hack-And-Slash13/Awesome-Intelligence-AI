@@ -1,13 +1,13 @@
 services:
   # Backend API Service
   - type: web
-    name: hope-ai
+    name: AI(Awesome Intelligence)
     runtime: node
     region: oregon
     plan: free
     branch: main
     buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    startCommand: cd backend && node server.js
     envVars:
       - key: GITHUB_TOKEN
         sync: false
