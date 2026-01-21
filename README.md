@@ -52,6 +52,12 @@ Open your browser and navigate to:
 http://localhost:3000
 ```
 
+Or...
+The easy way:
+
+Go to https://ai-awesome-intelligence.onrender.com/ and chat with the Awesome Intelligence AI!
+
+
 ## 📁 Project Structure
 
 ```
