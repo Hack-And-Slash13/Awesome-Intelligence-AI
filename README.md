@@ -65,7 +65,7 @@ AI-repository/
 ├── backend/
 │   ├── server.js          # Express server with Copilot API integration
 │   ├── package.json       # Backend dependencies
-│   └── .env.example       # Environment variables template
+│   └── .env.env           # Environment variables
 ├── frontend/
 │   ├── index.html         # Main HTML (heavily commented for customization)
 │   ├── styles.css         # CSS styling (fully customizable)
@@ -109,14 +109,6 @@ Edit `backend/server.js` to customize:
 - Temperature (creativity level)
 - Max tokens (response length)
 - Conversation history limit
-
-### Environment Variables
-
-Create `backend/.env` from `.env.example`:
-```env
-GITHUB_TOKEN=your_github_token_here
-PORT=3000
-```
 
 ## 🌐 API Endpoints
 
