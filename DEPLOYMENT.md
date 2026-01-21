@@ -1,6 +1,6 @@
 # Deploying to Render
 
-Follow these steps to deploy Hope AI to Render:
+Follow these steps to deploy Awesome Intelligence AI to Render:
 
 ## Prerequisites
 - A GitHub account
@@ -10,7 +10,7 @@ Follow these steps to deploy Hope AI to Render:
 ## Deployment Steps
 
 ### 1. Push Your Code to GitHub
-Your code is already on GitHub at: `https://github.com/Hack-And-Slash13/AI-repository`
+Your code is already on GitHub at: `https://github.com/Hack-And-Slash13/Awesome-Intelligence-AI`
 
 ### 2. Sign Up/Login to Render
 1. Go to https://render.com
@@ -26,13 +26,13 @@ Your code is already on GitHub at: `https://github.com/Hack-And-Slash13/AI-repos
 
 Fill in these settings:
 
-- **Name**: `hope-ai` (or any name you prefer)
+- **Name**: `Awesome Intelligence AI` (or any name you prefer)
 - **Region**: Choose closest to you
 - **Branch**: `main`
-- **Root Directory**: Leave empty
+- **Root Directory**: backend
 - **Runtime**: `Node`
-- **Build Command**: `cd backend && npm install`
-- **Start Command**: `cd backend && npm start`
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
 - **Instance Type**: `Free`
 
 ### 5. Add Environment Variables
@@ -46,7 +46,7 @@ Click **"Advanced"** and add:
 
 1. Click **"Create Web Service"**
 2. Render will build and deploy your app (takes 2-5 minutes)
-3. Once deployed, you'll get a URL like: `https://hope-ai.onrender.com`
+3. Once deployed, you'll get a URL like: `https://ai.onrender.com`
 
 ### 7. Access Your App
 
