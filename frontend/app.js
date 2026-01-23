@@ -69,6 +69,7 @@ function toggleVoiceMode() {
     } else {
         voiceButton.style.backgroundColor = '';
         voiceButton.style.color = '';
+        messageInput.placeholder = "Type your message here... (Press Enter to send, Shift+Enter for new line)";
     }
 }
 
