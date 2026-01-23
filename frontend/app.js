@@ -103,10 +103,6 @@ function listen() {
         alert("Speech recognition error: " + event.error);
     };
 
-    recognition.onend = () => {
-        messageInput.placeholder = "Type your message here...";
-    };
-
     recognition.start();
 }
 
