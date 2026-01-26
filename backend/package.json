@@ -1,10 +1,11 @@
 {
   "name": "chat-ai-backend",
   "version": "1.0.0",
-  "description": "Backend server for Chat AI with GitHub Copilot integration",
+  "description": "Backend server for Chat AI with GitHub Copilot integration and image generation",
+  "type": "module",
   "main": "server.js",
   "engines": {
-    "node": ">=14.x"
+    "node": ">=18.x"
   },
   "scripts": {
     "start": "node server.js",
@@ -15,7 +16,9 @@
     "ai",
     "chat",
     "github-copilot",
-    "express"
+    "express",
+    "openai",
+    "images"
   ],
   "author": "",
   "license": "MIT",
@@ -29,4 +32,3 @@
     "nodemon": "^3.0.1"
   }
 }
-
