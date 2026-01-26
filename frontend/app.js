@@ -1,4 +1,3 @@
-
 // ============================================
 // CONFIGURATION
 // ============================================
@@ -21,6 +20,7 @@ const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const messageInput = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
+const imageButton = document.getElementById('imageButton');
 const typingIndicator = document.getElementById('typingIndicator');
 const clearChatBtn = document.getElementById('clearChatBtn');
 const errorToast = document.getElementById('errorToast');
@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 
 function initializeEventListeners() {
-    chatForm.addEventListener('submit', handleSubmit);
+    chatForm.addEventListener('submit', handleTextSubmit);
+    imageButton.addEventListener('click', handleImageSubmit);
+
     messageInput.addEventListener('input', autoResizeTextarea);
     messageInput.addEventListener('keydown', handleKeyDown);
     clearChatBtn.addEventListener('click', handleClearChat);
@@ -57,62 +59,42 @@ function initializeEventListeners() {
 }
 
 // ============================================
-// VOICE MODE
+// INPUT LOCKING (shared)
 // ============================================
 
-function toggleVoiceMode() {
-    voiceMode = !voiceMode;
+function lockInput(placeholder) {
+    isWaitingForResponse = true;
 
-    if (voiceMode) {
-        voiceButton.style.backgroundColor = '#808080';
-        voiceButton.style.color = 'white';
-        listen();
-    } else {
-        voiceButton.style.backgroundColor = '';
-        voiceButton.style.color = '';
-        messageInput.placeholder = "Type your message here... (Press Enter to send, Shift+Enter for new line)";
-    }
+    messageInput.disabled = true;
+    messageInput.dataset.originalPlaceholder = messageInput.placeholder;
+    messageInput.placeholder = placeholder;
+    messageInput.value = '';
+
+    sendButton.disabled = true;
+    imageButton.disabled = true;
+    voiceButton.disabled = true;
 }
 
-function listen() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+function unlockInput() {
+    isWaitingForResponse = false;
 
-    if (!SpeechRecognition) {
-        alert("Your browser does not support the Web Speech API.");
-        return;
-    }
+    messageInput.disabled = false;
+    messageInput.placeholder =
+        messageInput.dataset.originalPlaceholder ||
+        'Type your message here...';
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    sendButton.disabled = false;
+    imageButton.disabled = false;
+    voiceButton.disabled = false;
 
-    recognition.onstart = () => {
-        messageInput.placeholder = "Listening...";
-    };
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        messageInput.value = transcript;
-        autoResizeTextarea();
-        messageInput.focus();
-        // Optionally auto-send after speech:
-        // chatForm.dispatchEvent(new Event('submit'));
-    };
-
-    recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        alert("Speech recognition error: " + event.error);
-    };
-
-    recognition.start();
+    messageInput.focus();
 }
 
 // ============================================
-// FORM SUBMISSION
+// TEXT SUBMISSION (UNCHANGED BEHAVIOR)
 // ============================================
 
-async function handleSubmit(e) {
+async function handleTextSubmit(e) {
     e.preventDefault();
 
     const message = messageInput.value.trim();
@@ -124,9 +106,7 @@ async function handleSubmit(e) {
 
     addMessage(message, 'user');
     showTypingIndicator();
-
-    isWaitingForResponse = true;
-    sendButton.disabled = true;
+    lockInput('Thinking...');
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -145,20 +125,114 @@ async function handleSubmit(e) {
         if (voiceMode) talk(data.message);
 
         conversationId = data.conversationId;
-        hideTypingIndicator();
         addMessage(data.message, 'ai');
 
     } catch (error) {
         console.error('Chat error:', error);
+        showError(error.message);
+    } finally {
+        hideTypingIndicator();
+        unlockInput();
+        if (voiceMode) listen();
+    }
+}
+
+// ==============================
+// IMAGE GENERATION
+// ==============================
+
+// Add a new button in your HTML with id="imageButton"
+// <button type="button" id="imageButton">🖼 Generate Image</button>
+
+const imageButton = document.getElementById('imageButton');
+
+imageButton.addEventListener('click', handleGenerateImage);
+
+async function handleGenerateImage() {
+    const prompt = messageInput.value.trim();
+    if (!prompt || isWaitingForResponse) return;
+
+    // Disable buttons and show loading placeholder
+    isWaitingForResponse = true;
+    sendButton.disabled = true;
+    imageButton.disabled = true;
+    const originalPlaceholder = messageInput.placeholder;
+    messageInput.placeholder = "Generating image...";
+    messageInput.value = '';
+
+    document.querySelector('.welcome-section')?.remove();
+
+    addMessage(prompt, 'user'); // show user prompt
+    showTypingIndicator();
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/image/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || 'Image request failed');
+        }
+
+        const data = await response.json();
+        hideTypingIndicator();
+
+        if (data.imageUrl) {
+            addImageMessage(data.imageUrl);
+        } else {
+            showError('No image returned');
+        }
+
+    } catch (error) {
+        console.error('Image generation error:', error);
         hideTypingIndicator();
         showError(error.message);
     } finally {
         isWaitingForResponse = false;
         sendButton.disabled = false;
+        imageButton.disabled = false;
+        messageInput.placeholder = originalPlaceholder;
         messageInput.focus();
     }
-    if (voiceMode) listen();
 }
+
+// ==============================
+// ADD IMAGE TO CHAT
+// ==============================
+function addImageMessage(imageUrl) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = 'AI';
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = 'Generated by AI';
+    img.className = 'message-image';
+    img.style.maxWidth = '400px';
+    img.style.borderRadius = '8px';
+
+    const timestamp = document.createElement('div');
+    timestamp.className = 'message-timestamp';
+    timestamp.textContent = formatTime(new Date());
+
+    content.appendChild(img);
+    content.appendChild(timestamp);
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    chatMessages.appendChild(messageDiv);
+
+    scrollToBottom();
+}
+
 
 // ============================================
 // MESSAGE DISPLAY
@@ -192,13 +266,86 @@ function addMessage(text, type) {
     scrollToBottom();
 }
 
-function talk(words) {
-    const speech = new SpeechSynthesisUtterance(words);
-    window.speechSynthesis.speak(speech);
+function addImageMessage(imageUrl) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = 'AI';
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = 'Generated image';
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '12px';
+
+    const timestamp = document.createElement('div');
+    timestamp.className = 'message-timestamp';
+    timestamp.textContent = formatTime(new Date());
+
+    content.appendChild(img);
+    content.appendChild(timestamp);
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    chatMessages.appendChild(messageDiv);
+
+    scrollToBottom();
 }
 
 // ============================================
-// TYPING INDICATOR
+// VOICE MODE (UNCHANGED)
+// ============================================
+
+function toggleVoiceMode() {
+    voiceMode = !voiceMode;
+
+    if (voiceMode) {
+        voiceButton.style.backgroundColor = '#808080';
+        voiceButton.style.color = 'white';
+        listen();
+    } else {
+        voiceButton.style.backgroundColor = '';
+        voiceButton.style.color = '';
+        messageInput.placeholder =
+            'Type your message here... (Press Enter to send, Shift+Enter for new line)';
+    }
+}
+
+function listen() {
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert('Your browser does not support the Web Speech API.');
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+        messageInput.placeholder = 'Listening...';
+    };
+
+    recognition.onresult = (event) => {
+        messageInput.value = event.results[0][0].transcript;
+        autoResizeTextarea();
+        messageInput.focus();
+    };
+
+    recognition.start();
+}
+
+function talk(words) {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(words));
+}
+
+// ============================================
+// UI HELPERS
 // ============================================
 
 function showTypingIndicator() {
@@ -208,6 +355,23 @@ function showTypingIndicator() {
 
 function hideTypingIndicator() {
     typingIndicator.style.display = 'none';
+}
+
+function autoResizeTextarea() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height =
+        Math.min(messageInput.scrollHeight, 150) + 'px';
+}
+
+// ============================================
+// KEYBOARD HANDLING
+// ============================================
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !isWaitingForResponse) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+    }
 }
 
 // ============================================
@@ -227,30 +391,9 @@ async function handleClearChat() {
         conversationId = null;
         chatMessages.innerHTML = '';
         location.reload();
-
     } catch (error) {
         console.error(error);
         showError('Failed to clear conversation');
-    }
-}
-
-// ============================================
-// TEXTAREA AUTO-RESIZE
-// ============================================
-
-function autoResizeTextarea() {
-    messageInput.style.height = 'auto';
-    messageInput.style.height = Math.min(messageInput.scrollHeight, 150) + 'px';
-}
-
-// ============================================
-// KEYBOARD HANDLING
-// ============================================
-
-function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        chatForm.dispatchEvent(new Event('submit'));
     }
 }
 
