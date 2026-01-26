@@ -6,7 +6,6 @@
 :root {
     /* ============================================
        COLOR SCHEME
-       CUSTOMIZATION: Change these colors to match your brand
        ============================================ */
     --primary-color: #0066cc;
     --primary-hover: #0052a3;
@@ -40,7 +39,6 @@
     
     /* ============================================
        TYPOGRAPHY
-       CUSTOMIZATION: Change font families here
        ============================================ */
     --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     --font-mono: 'Courier New', Courier, monospace;
@@ -79,7 +77,6 @@ body {
 
 /* ============================================
    MAIN CONTAINER
-   CUSTOMIZATION: Adjust max-width and padding
    ============================================ */
 
 .container {
@@ -94,7 +91,6 @@ body {
 
 /* ============================================
    HEADER SECTION
-   CUSTOMIZATION: Edit header styling, colors, and layout
    ============================================ */
 
 .chat-header {
@@ -203,7 +199,6 @@ body {
 
 /* ============================================
    WELCOME SECTION
-   CUSTOMIZATION: Edit welcome screen styling
    ============================================ */
 
 .welcome-section {
@@ -254,7 +249,6 @@ body {
 
 /* ============================================
    SUGGESTION CHIPS
-   CUSTOMIZATION: Style the suggestion buttons
    ============================================ */
 
 .suggestion-chips {
@@ -285,7 +279,6 @@ body {
 
 /* ============================================
    MESSAGE BUBBLES
-   CUSTOMIZATION: Edit message appearance
    ============================================ */
 
 .message {
@@ -401,7 +394,6 @@ body {
 
 /* ============================================
    INPUT SECTION
-   CUSTOMIZATION: Edit input area styling
    ============================================ */
 
 .chat-input-container {
@@ -433,36 +425,50 @@ body {
     border-color: var(--primary-color);
 }
 
-.send-button {
+/* ============================================
+   FIXED BUTTON LAYOUT
+   ============================================ */
+
+.input-buttons {
+    display: flex;             /* horizontal row */
+    gap: 8px;                  /* spacing between buttons */
+    align-items: center;       /* vertical alignment */
+    flex-wrap: wrap;           /* wrap on small screens */
+}
+
+.input-buttons button {
+    flex-shrink: 0;            /* don’t shrink */
+    height: 48px;
+    padding: 0 12px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.voice-button {
     width: 48px;
     height: 48px;
-    background: var(--primary-color);
-    border: none;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
+    border-radius: 50%;
+    background: var(--secondary-color);
+    color: var(--text-light);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
-.send-button:hover:not(:disabled) {
+.voice-button:hover {
     background: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
-.send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.send-button,
+#imageButton {
+    height: 48px;
 }
 
-.send-button svg {
-    width: 20px;
-    height: 20px;
-    color: var(--text-light);
-}
+/* ============================================
+   INPUT FOOTER
+   ============================================ */
 
 .input-footer {
     margin-top: var(--spacing-sm);
@@ -507,7 +513,6 @@ body {
 
 /* ============================================
    SCROLLBAR STYLING
-   CUSTOMIZATION: Edit scrollbar appearance
    ============================================ */
 
 .chat-container::-webkit-scrollbar {
@@ -529,7 +534,6 @@ body {
 
 /* ============================================
    RESPONSIVE DESIGN
-   CUSTOMIZATION: Adjust breakpoints and mobile styling
    ============================================ */
 
 @media (max-width: 768px) {
@@ -575,8 +579,7 @@ body {
 }
 
 /* ============================================
-   CODE BLOCKS (for AI responses with code)
-   CUSTOMIZATION: Style code in messages
+   CODE BLOCKS
    ============================================ */
 
 .message-content code {
