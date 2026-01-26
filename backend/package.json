@@ -2,7 +2,6 @@
   "name": "chat-ai-backend",
   "version": "1.0.0",
   "description": "Backend server for Chat AI with GitHub Copilot integration and image generation",
-  "type": "module",
   "main": "server.js",
   "engines": {
     "node": ">=18.x"
