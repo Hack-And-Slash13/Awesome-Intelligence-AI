@@ -446,8 +446,8 @@ body {
 }
 
 .voice-button {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: var(--secondary-color);
     color: var(--text-light);
