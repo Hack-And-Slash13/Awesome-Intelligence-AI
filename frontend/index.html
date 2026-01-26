@@ -1,88 +1,48 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- ============================================
-         CUSTOMIZATION: Change your app title here
-         ============================================ -->
     <title>Awesome Intelligence AI</title>
-
     <link rel="stylesheet" href="styles.css">
-    
 </head>
+
 <body>
-    <!-- ============================================
-         MAIN CONTAINER
-         You can modify the container structure here
-         ============================================ -->
     <div class="container">
 
-        <!-- ============================================
-             HEADER SECTION
-             CUSTOMIZATION: Edit app name, tagline, and styling
-             ============================================ -->
+        <!-- ================= HEADER ================= -->
         <header class="chat-header">
             <div class="header-content">
-                <!-- App logo and title - Edit these to match your brand -->
                 <div class="header-left">
                     <div class="logo-container">
                         <img src="./image.png" alt="Logo" class="logo-icon" />
                     </div>
                     <div class="header-text">
-                        <!-- ============================================
-                             CUSTOMIZATION: Change your app name here
-                             ============================================ -->
                         <h1 class="app-title">Awesome Intelligence AI</h1>
                     </div>
                 </div>
 
-                <!-- ============================================
-                     HEADER ACTIONS
-                     CUSTOMIZATION: Add/remove header buttons
-                     ============================================ -->
                 <div class="header-right">
                     <button class="header-btn" id="clearChatBtn" title="Clear conversation">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                     </button>
-
-                    <!-- ============================================
-                         CUSTOMIZATION: Add more header buttons here
-                         Example: Settings, Help, User Profile, etc.
-                         ============================================ -->
                 </div>
             </div>
         </header>
 
-        <!-- ============================================
-             CHAT AREA - Main conversation display
-             ============================================ -->
+        <!-- ================= CHAT ================= -->
         <div class="chat-container">
             <div class="chat-messages" id="chatMessages">
 
-                <!-- ============================================
-                     WELCOME MESSAGE
-                     CUSTOMIZATION: Edit the welcome message and suggestions
-                     ============================================ -->
                 <div class="welcome-section">
                     <div class="welcome-icon">
                         <img src="./image.png" alt="Logo" class="welcome-icon-image" />
                     </div>
-
-                    <!-- ============================================
-                         CUSTOMIZATION: Edit welcome message
-                         ============================================ -->
                     <h2 class="welcome-title">Hello! I am Awesome Intelligence AI.</h2>
                     <p class="welcome-subtitle">How can I help you?</p>
 
-                    <!-- ============================================
-                         SUGGESTION CHIPS
-                         CUSTOMIZATION: Modify or add more suggestions
-                         ============================================ -->
                     <div class="suggestion-chips">
                         <button class="chip" data-suggestion="Explain quantum computing in simple terms">
                             🔬 Explain quantum computing
@@ -99,13 +59,8 @@
                     </div>
                 </div>
 
-                <!-- Messages will be dynamically added here by JavaScript -->
             </div>
 
-            <!-- ============================================
-                 TYPING INDICATOR
-                 Shown when AI is processing a response
-                 ============================================ -->
             <div class="typing-indicator" id="typingIndicator" style="display: none;">
                 <div class="typing-dot"></div>
                 <div class="typing-dot"></div>
@@ -113,53 +68,42 @@
             </div>
         </div>
 
-        <!-- ============================================
-             INPUT SECTION
-             Where users type their messages
-             ============================================ -->
+        <!-- ================= INPUT ================= -->
         <div class="chat-input-container">
             <form id="chatForm" class="chat-input-form">
 
-                <!-- ============================================
-                     CUSTOMIZATION: Modify placeholder text
-                     ============================================ -->
                 <textarea 
-                    id="messageInput" 
-                    class="message-input" 
-                    placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                    id="messageInput"
+                    class="message-input"
+                    placeholder="Type your message here..."
                     rows="1"
                     maxlength="2000"
                 ></textarea>
 
-                <!-- ============================================
-                     SEND BUTTON
-                     CUSTOMIZATION: Change button styling or icon
-                     ============================================ -->
-                <button type="submit" class="send-button" id="sendButton">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-                <button type="button" class="voice-button" id="voice-button">
-                    🎤 Voice mode
-                </button>
+                <div class="input-buttons">
+                    <button type="submit" class="send-button" id="sendButton" title="Send message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+
+                    <button type="button" class="send-button" id="imageButton">
+                        🖼 Generate Image
+                    </button>
+                    <button type="button" class="voice-button" id="voice-button">
+                        🎤
+                    </button>
+                </div>
             </form>
 
-            <!-- ============================================
-                 INPUT FOOTER
-                 CUSTOMIZATION: Add disclaimers or info text
-                 ============================================ -->
             <div class="input-footer">
                 <small>AI can make mistakes. Consider checking important information.</small>
             </div>
         </div>
     </div>
 
-    <!-- ============================================
-         ERROR TOAST NOTIFICATION
-         Displays error messages to the user
-         ============================================ -->
+    <!-- ================= ERROR TOAST ================= -->
     <div id="errorToast" class="toast error-toast">
         <div class="toast-content">
             <span class="toast-icon">⚠️</span>
@@ -167,10 +111,7 @@
         </div>
     </div>
 
-    <!-- ============================================
-         JAVASCRIPT
-         Main functionality is in app.js
-         ============================================ -->
+    <!-- ================= SCRIPT ================= -->
     <script src="app.js"></script>
 </body>
 </html>
