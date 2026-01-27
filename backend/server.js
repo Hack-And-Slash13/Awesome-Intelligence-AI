@@ -68,42 +68,6 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ==============================
-// IMAGE ENDPOINT
-// ==============================
-app.post('/image/create', async (req, res) => {
-    try {
-        const { prompt } = req.body;
-        if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
-        if (!OPENAI_API_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not set.' });
-
-        const response = await axios.post(
-            'https://api.openai.com/v1/images/generations',
-            {
-                model: 'gpt-image-1',
-                prompt,
-                n: 1,
-                size: '1024x1024'
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 60000
-            }
-        );
-
-        const imageUrl = response.data.data?.[0]?.url;
-        if (!imageUrl) throw new Error('No image returned');
-
-        res.json({ imageUrl });
-
-    } catch (err) {
-        console.error('Image generation error:', err.response?.data || err.message);
-        res.status(500).json({ error: 'Failed to generate image', details: err.response?.data || err.message });
-    }
-});
-// ==============================
 // CLEAR CONVERSATION
 // ==============================
 app.delete('/api/chat/:conversationId', (req, res) => {
