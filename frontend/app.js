@@ -142,28 +142,34 @@ async function handleGenerateImage() {
     lockInput('Generating image...');
     document.querySelector('.welcome-section')?.remove();
     addMessage(prompt, 'user');
-
     showTypingIndicator();
 
     try {
-        const response = await fetch(`${API_BASE_URL}/image/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
-        });
+        // Create a canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
 
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(text || 'Image request failed');
+        // Procedural image generation based on prompt length
+        // (You can expand this with more rules later)
+        const numShapes = Math.min(50, Math.max(5, prompt.length));
+        for (let i = 0; i < numShapes; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const w = Math.random() * 100 + 20;
+            const h = Math.random() * 100 + 20;
+
+            ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 60%)`;
+            ctx.beginPath();
+            ctx.ellipse(x, y, w / 2, h / 2, Math.random() * Math.PI, 0, 2 * Math.PI);
+            ctx.fill();
         }
 
-        const data = await response.json();
+        // Convert canvas to a data URL
+        const imageUrl = canvas.toDataURL('image/png');
 
-        if (data.imageUrl) {
-            addImageMessage(data.imageUrl);
-        } else {
-            showError('No image returned');
-        }
+        addImageMessage(imageUrl);
 
     } catch (error) {
         console.error('Image generation error:', error);
