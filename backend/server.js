@@ -6,13 +6,10 @@ const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-
-const generatedPath = path.join(__dirname, 'generated');
-if (!fs.existsSync(generatedPath)) fs.mkdirSync(generatedPath, { recursive: true });
+const { spawn } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 // ==============================
@@ -35,19 +32,24 @@ const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
 // ==============================
+// GENERATED IMAGES PATH
+// ==============================
+const generatedPath = path.join(__dirname, 'generated');
+if (!fs.existsSync(generatedPath)) fs.mkdirSync(generatedPath, { recursive: true });
+app.use('/generated', express.static(generatedPath));
+
+// ==============================
 // CHAT STATE
 // ==============================
 const conversationHistory = new Map();
-
 function generateSessionId() {
     return `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 // ==============================
-// IMAGE JOB STATE (IN-MEMORY)
+// IMAGE JOB STATE
 // ==============================
 const imageJobs = new Map();
-
 function generateJobId() {
     return `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -58,70 +60,35 @@ function generateJobId() {
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, conversationId } = req.body;
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
-        }
+        if (!message) return res.status(400).json({ error: 'Message is required' });
 
         const sessionId = conversationId || generateSessionId();
         let history = conversationHistory.get(sessionId) || [];
-
         history.push({ role: 'user', content: message });
 
-        const messages = history.map(m => ({
-            role: m.role,
-            content: m.content
-        }));
+        const messages = history.map(m => ({ role: m.role, content: m.content }));
 
-        if (!GITHUB_TOKEN) {
-            return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
-        }
+        if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
 
         const response = await axios.post(
             'https://models.inference.ai.azure.com/chat/completions',
-            {
-                model: 'gpt-4o-mini',
-                messages,
-                temperature: 0.7,
-                max_tokens: 500
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000
-            }
+            { model: 'gpt-4o-mini', messages, temperature: 0.7, max_tokens: 500 },
+            { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' }, timeout: 30000 }
         );
 
-        const aiMessage =
-            response.data?.choices?.[0]?.message?.content?.trim() ||
-            'No response';
-
+        const aiMessage = response.data?.choices?.[0]?.message?.content?.trim() || 'No response';
         history.push({ role: 'assistant', content: aiMessage });
 
         // Keep last 20 messages
-        if (history.length > 20) {
-            history = history.slice(-20);
-        }
-
+        if (history.length > 20) history = history.slice(-20);
         conversationHistory.set(sessionId, history);
 
-        res.json({
-            message: aiMessage,
-            conversationId: sessionId
-        });
+        res.json({ message: aiMessage, conversationId: sessionId });
 
     } catch (error) {
         console.error('Chat error:', error.response?.data || error.message);
-
-        if (error.response?.status === 401) {
-            return res.status(401).json({ error: 'Invalid GitHub token' });
-        }
-
-        if (error.response?.status === 429) {
-            return res.status(429).json({ error: 'Rate limit exceeded' });
-        }
-
+        if (error.response?.status === 401) return res.status(401).json({ error: 'Invalid GitHub token' });
+        if (error.response?.status === 429) return res.status(429).json({ error: 'Rate limit exceeded' });
         res.status(500).json({ error: 'Failed to get AI response' });
     }
 });
@@ -131,12 +98,10 @@ app.post('/api/chat', async (req, res) => {
 // ==============================
 app.delete('/api/chat/:conversationId', (req, res) => {
     const { conversationId } = req.params;
-
     if (conversationHistory.has(conversationId)) {
         conversationHistory.delete(conversationId);
         return res.json({ message: 'Conversation cleared' });
     }
-
     res.status(404).json({ error: 'Conversation not found' });
 });
 
@@ -146,11 +111,11 @@ app.delete('/api/chat/:conversationId', (req, res) => {
 app.post('/api/image', (req, res) => {
     try {
         const { prompt } = req.body;
-        if (!prompt) {
-            return res.status(400).json({ error: 'Prompt is required' });
-        }
+        if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
 
         const jobId = generateJobId();
+        const outputFile = `img_${jobId}.png`;
+        const outputPath = path.join(generatedPath, outputFile);
 
         imageJobs.set(jobId, {
             id: jobId,
@@ -160,45 +125,27 @@ app.post('/api/image', (req, res) => {
             createdAt: Date.now()
         });
 
-        const { spawn } = require('child_process');
+        // Spawn Python worker
+        const worker = spawn('python3', [
+            'worker/vqgan_worker.py',
+            '--prompt', prompt,
+            '--output', outputPath,
+            '--width', '512',
+            '--height', '512'
+        ]);
 
-const outputFile = `img_${jobId}.png`;
-const outputPath = path.join(__dirname, 'generated', outputFile);
+        worker.stdout.on('data', data => console.log(`[VQGAN] ${data}`));
+        worker.stderr.on('data', data => console.error(`[VQGAN ERROR] ${data}`));
+        worker.on('close', code => {
+            const job = imageJobs.get(jobId);
+            if (!job) return;
 
-// Spawn Python worker
-const worker = spawn('python3', [
-    'worker/vqgan_worker.py',
-    '--prompt', prompt,
-    '--output', outputPath
-]);
-;
-
-worker.stdout.on('data', data => {
-    console.log(`[VQGAN] ${data}`);
-});
-
-worker.stderr.on('data', data => {
-    console.error(`[VQGAN ERROR] ${data}`);
-});
-
-worker.on('close', code => {
-    const job = imageJobs.get(jobId);
-    if (!job) return;
-
-    if (code === 0) {
-        imageJobs.set(jobId, {
-            ...job,
-            status: 'done',
-            imageUrl: `/generated/${outputFile}`
+            imageJobs.set(jobId, {
+                ...job,
+                status: code === 0 ? 'done' : 'error',
+                imageUrl: code === 0 ? `/generated/${outputFile}` : null
+            });
         });
-    } else {
-        imageJobs.set(jobId, {
-            ...job,
-            status: 'error'
-        });
-    }
-});
-
 
         res.json({ jobId });
 
@@ -212,17 +159,9 @@ worker.on('close', code => {
 // IMAGE JOB STATUS
 // ==============================
 app.get('/api/image/:jobId', (req, res) => {
-    const { jobId } = req.params;
-
-    const job = imageJobs.get(jobId);
-    if (!job) {
-        return res.status(404).json({ error: 'Image job not found' });
-    }
-
-    res.json({
-        status: job.status,
-        imageUrl: job.imageUrl
-    });
+    const job = imageJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ error: 'Image job not found' });
+    res.json({ status: job.status, imageUrl: job.imageUrl });
 });
 
 // ==============================
@@ -240,30 +179,22 @@ app.get('/api/health', (req, res) => {
 // ==============================
 // CLEANUP OLD DATA
 // ==============================
+const ONE_HOUR = 60 * 60 * 1000;
 setInterval(() => {
-    const ONE_HOUR = 60 * 60 * 1000;
     const now = Date.now();
-
     for (const [id] of conversationHistory.entries()) {
         const timestamp = Number(id.split('_')[1]);
-        if (timestamp && now - timestamp > ONE_HOUR) {
-            conversationHistory.delete(id);
-        }
+        if (timestamp && now - timestamp > ONE_HOUR) conversationHistory.delete(id);
     }
 }, ONE_HOUR);
 
+const TEN_MINUTES = 10 * 60 * 1000;
 setInterval(() => {
-    const TEN_MINUTES = 10 * 60 * 1000;
     const now = Date.now();
-
     for (const [jobId, job] of imageJobs.entries()) {
-        if (now - job.createdAt > TEN_MINUTES) {
-            imageJobs.delete(jobId);
-        }
+        if (now - job.createdAt > TEN_MINUTES) imageJobs.delete(jobId);
     }
 }, 5 * 60 * 1000);
-
-app.use('/generated', express.static(generatedPath));
 
 // ==============================
 // START SERVER
