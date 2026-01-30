@@ -143,13 +143,15 @@ async function handleGenerateImage() {
     const prompt = messageInput.value.trim();
     if (!prompt || isWaitingForResponse) return;
 
+    // 1️⃣ Lock input & show "Generating image..."
     lockInput('Generating image...');
     document.querySelector('.welcome-section')?.remove();
+
+    // 2️⃣ Show user message immediately
     addMessage(prompt, 'user');
-    showTypingIndicator();
 
     try {
-        // 1️⃣ Create image generation job
+        // 3️⃣ Create image generation job
         const createRes = await fetch(`${API_BASE_URL}/api/image`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -162,20 +164,23 @@ async function handleGenerateImage() {
 
         const { jobId } = await createRes.json();
 
-        // 2️⃣ Poll for completion
+        // 4️⃣ Poll for completion with a small indicator in the chat
+        const statusMsgId = addMessage('⏳ Generating image...', 'ai', true);
+
         const imageUrl = await pollImageJob(jobId);
 
-        // 3️⃣ Display image
-        addImageMessage(imageUrl);
+        // 5️⃣ Replace the "Generating..." message with the actual image
+        replaceMessageWithImage(statusMsgId, imageUrl);
 
     } catch (error) {
         console.error('Image generation error:', error);
         showError(error.message || 'Image generation failed');
     } finally {
-        hideTypingIndicator();
+        // 6️⃣ Unlock input for the next prompt
         unlockInput();
     }
 }
+
 
 // ============================================
 // IMAGE JOB POLLING
@@ -398,3 +403,4 @@ function formatTime(date) {
         .toString()
         .padStart(2, '0')}`;
 }
+
