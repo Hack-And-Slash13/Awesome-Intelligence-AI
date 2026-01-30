@@ -135,6 +135,10 @@ async function handleTextSubmit(e) {
 // IMAGE GENERATION
 // ============================================
 
+// ============================================
+// IMAGE GENERATION (BACKEND-BASED)
+// ============================================
+
 async function handleGenerateImage() {
     const prompt = messageInput.value.trim();
     if (!prompt || isWaitingForResponse) return;
@@ -145,38 +149,65 @@ async function handleGenerateImage() {
     showTypingIndicator();
 
     try {
-        // Create a canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
+        // 1️⃣ Create image generation job
+        const createRes = await fetch(`${API_BASE_URL}/api/image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
 
-        // Procedural image generation based on prompt length
-        // (You can expand this with more rules later)
-        const numShapes = Math.min(50, Math.max(5, prompt.length));
-        for (let i = 0; i < numShapes; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const w = Math.random() * 100 + 20;
-            const h = Math.random() * 100 + 20;
-
-            ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 60%)`;
-            ctx.beginPath();
-            ctx.ellipse(x, y, w / 2, h / 2, Math.random() * Math.PI, 0, 2 * Math.PI);
-            ctx.fill();
+        if (!createRes.ok) {
+            throw new Error('Failed to start image generation');
         }
 
-        // Convert canvas to a data URL
-        const imageUrl = canvas.toDataURL('image/png');
+        const { jobId } = await createRes.json();
 
+        // 2️⃣ Poll for completion
+        const imageUrl = await pollImageJob(jobId);
+
+        // 3️⃣ Display image
         addImageMessage(imageUrl);
 
     } catch (error) {
         console.error('Image generation error:', error);
-        showError(error.message);
+        showError(error.message || 'Image generation failed');
     } finally {
         hideTypingIndicator();
         unlockInput();
+    }
+}
+
+// ============================================
+// IMAGE JOB POLLING
+// ============================================
+
+async function pollImageJob(jobId) {
+    const POLL_INTERVAL = 3000; // 3 seconds
+    const TIMEOUT = 3 * 60 * 1000; // 3 minutes
+    const startTime = Date.now();
+
+    while (true) {
+        if (Date.now() - startTime > TIMEOUT) {
+            throw new Error('Image generation timed out');
+        }
+
+        const res = await fetch(`${API_BASE_URL}/api/image/${jobId}`);
+        if (!res.ok) {
+            throw new Error('Failed to fetch image status');
+        }
+
+        const data = await res.json();
+
+        if (data.status === 'done') {
+            return data.imageUrl; // URL or base64
+        }
+
+        if (data.status === 'error') {
+            throw new Error(data.error || 'Image generation failed');
+        }
+
+        // Still processing
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
     }
 }
 
