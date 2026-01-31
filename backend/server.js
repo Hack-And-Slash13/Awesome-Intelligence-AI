@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 
 const express = require('express');
@@ -6,17 +5,20 @@ const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const HF_API_TOKEN = process.env.HF_API_TOKEN; // Add your Hugging Face token
 
 // ==============================
 // WARNINGS
 // ==============================
 if (!GITHUB_TOKEN) {
     console.warn('⚠️ GITHUB_TOKEN not set. Chat will not work.');
+}
+if (!HF_API_TOKEN) {
+    console.warn('⚠️ HF_API_TOKEN not set. Image generation will fail.');
 }
 
 // ==============================
@@ -32,26 +34,11 @@ const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
 // ==============================
-// GENERATED IMAGES PATH
-// ==============================
-const generatedPath = path.join(__dirname, 'generated');
-if (!fs.existsSync(generatedPath)) fs.mkdirSync(generatedPath, { recursive: true });
-app.use('/generated', express.static(generatedPath));
-
-// ==============================
 // CHAT STATE
 // ==============================
 const conversationHistory = new Map();
 function generateSessionId() {
     return `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
-// ==============================
-// IMAGE JOB STATE
-// ==============================
-const imageJobs = new Map();
-function generateJobId() {
-    return `img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // ==============================
@@ -79,7 +66,6 @@ app.post('/api/chat', async (req, res) => {
         const aiMessage = response.data?.choices?.[0]?.message?.content?.trim() || 'No response';
         history.push({ role: 'assistant', content: aiMessage });
 
-        // Keep last 20 messages
         if (history.length > 20) history = history.slice(-20);
         conversationHistory.set(sessionId, history);
 
@@ -106,62 +92,35 @@ app.delete('/api/chat/:conversationId', (req, res) => {
 });
 
 // ==============================
-// CREATE IMAGE JOB
+// IMAGE GENERATION (HUGGING FACE)
 // ==============================
-app.post('/api/image', (req, res) => {
+app.post('/api/image', async (req, res) => {
     try {
         const { prompt } = req.body;
         if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
+        if (!HF_API_TOKEN) return res.status(500).json({ error: 'HF_API_TOKEN not configured' });
 
-        const jobId = generateJobId();
-        const outputFile = `img_${jobId}.png`;
-        const outputPath = path.join(generatedPath, outputFile);
+        const modelID = 'stabilityai/stable-diffusion-2-1';
 
-        imageJobs.set(jobId, {
-            id: jobId,
-            prompt,
-            status: 'processing',
-            imageUrl: null,
-            createdAt: Date.now()
-        });
+        const response = await axios.post(
+            `https://api-inference.huggingface.co/models/${modelID}`,
+            { inputs: prompt },
+            {
+                headers: { 
+                    Authorization: `Bearer ${HF_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                responseType: 'arraybuffer'
+            }
+        );
 
-        // Spawn Python worker
-        const worker = spawn('python3', [
-            'worker/vqgan_worker.py',
-            '--prompt', prompt,
-            '--output', outputPath,
-            '--width', '512',
-            '--height', '512'
-        ]);
-
-        worker.stdout.on('data', data => console.log(`[VQGAN] ${data}`));
-        worker.stderr.on('data', data => console.error(`[VQGAN ERROR] ${data}`));
-        worker.on('close', code => {
-            const job = imageJobs.get(jobId);
-            if (!job) return;
-
-            imageJobs.set(jobId, {
-                ...job,
-                status: code === 0 ? 'done' : 'error',
-                imageUrl: code === 0 ? `/generated/${outputFile}` : null
-            });
-        });
-
-        res.json({ jobId });
+        const imageBase64 = Buffer.from(response.data, 'binary').toString('base64');
+        res.json({ imageUrl: `data:image/png;base64,${imageBase64}` });
 
     } catch (error) {
-        console.error('Image job creation error:', error);
-        res.status(500).json({ error: 'Failed to create image job' });
+        console.error('Image generation error:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Image generation failed' });
     }
-});
-
-// ==============================
-// IMAGE JOB STATUS
-// ==============================
-app.get('/api/image/:jobId', (req, res) => {
-    const job = imageJobs.get(req.params.jobId);
-    if (!job) return res.status(404).json({ error: 'Image job not found' });
-    res.json({ status: job.status, imageUrl: job.imageUrl });
 });
 
 // ==============================
@@ -171,8 +130,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        activeConversations: conversationHistory.size,
-        imageJobs: imageJobs.size
+        activeConversations: conversationHistory.size
     });
 });
 
@@ -188,18 +146,11 @@ setInterval(() => {
     }
 }, ONE_HOUR);
 
-const TEN_MINUTES = 10 * 60 * 1000;
-setInterval(() => {
-    const now = Date.now();
-    for (const [jobId, job] of imageJobs.entries()) {
-        if (now - job.createdAt > TEN_MINUTES) imageJobs.delete(jobId);
-    }
-}, 5 * 60 * 1000);
-
 // ==============================
 // START SERVER
 // ==============================
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📝 GITHUB_TOKEN: ${GITHUB_TOKEN ? 'SET' : 'NOT SET'}`);
+    console.log(`🖼 HF_API_TOKEN: ${HF_API_TOKEN ? 'SET' : 'NOT SET'}`);
 });
