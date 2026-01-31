@@ -124,6 +124,12 @@ async function handleGenerateImage() {
     addMessage(prompt, 'user');
     lockInput('Generating image...');
 
+    // Add spinner to the button
+    imageButton.disabled = true;
+    const spinner = document.createElement('span');
+    spinner.className = 'button-spinner';
+    imageButton.appendChild(spinner);
+
     const statusMessage = addMessage('⏳ Generating image...', 'ai');
 
     try {
@@ -136,7 +142,6 @@ async function handleGenerateImage() {
         if (!res.ok) throw new Error('Image generation failed');
 
         const { imageUrl } = await res.json();
-
         replaceMessageWithImage(statusMessage, imageUrl);
 
     } catch (error) {
@@ -146,6 +151,8 @@ async function handleGenerateImage() {
         showError(error.message);
     } finally {
         unlockInput();
+        // Remove spinner
+        spinner.remove();
     }
 }
 
