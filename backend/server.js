@@ -94,32 +94,59 @@ app.delete('/api/chat/:conversationId', (req, res) => {
 // ==============================
 // IMAGE GENERATION (HUGGING FACE)
 // ==============================
+// ==============================
+// CREATE IMAGE JOB (Hugging Face Stable Diffusion)
+// ==============================
 app.post('/api/image', async (req, res) => {
     try {
         const { prompt } = req.body;
         if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
-        if (!HF_API_TOKEN) return res.status(500).json({ error: 'HF_API_TOKEN not configured' });
+
+        const HF_API_TOKEN = process.env.HF_API_TOKEN;
+        if (!HF_API_TOKEN) return res.status(500).json({ error: 'HF_API_TOKEN not set' });
 
         const modelID = 'stabilityai/stable-diffusion-2-1';
 
+        // Optional: immediately respond with a jobId if you want async behavior
+        const jobId = generateJobId();
+        imageJobs.set(jobId, { id: jobId, prompt, status: 'processing', imageUrl: null, createdAt: Date.now() });
+        res.json({ jobId }); // frontend can poll /api/image/:jobId
+
+        // Call Hugging Face Inference API
         const response = await axios.post(
             `https://api-inference.huggingface.co/models/${modelID}`,
             { inputs: prompt },
             {
-                headers: { 
-                    Authorization: `Bearer ${HF_API_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                responseType: 'arraybuffer'
+                headers: { Authorization: `Bearer ${HF_API_TOKEN}` },
+                responseType: 'arraybuffer', // get image binary
+                validateStatus: () => true // handle errors manually
             }
         );
 
-        const imageBase64 = Buffer.from(response.data, 'binary').toString('base64');
-        res.json({ imageUrl: `data:image/png;base64,${imageBase64}` });
+        // Handle errors returned as JSON
+        const contentType = response.headers['content-type'];
+        if (contentType?.includes('application/json')) {
+            const errorData = JSON.parse(Buffer.from(response.data).toString('utf8'));
+            console.error('HF error:', errorData);
+            imageJobs.set(jobId, { ...imageJobs.get(jobId), status: 'error', imageUrl: null });
+            return;
+        }
 
-    } catch (error) {
-        console.error('Image generation error:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Image generation failed' });
+        // Save image to generated folder
+        const imageBuffer = Buffer.from(response.data, 'binary');
+        const outputFile = `img_${jobId}.png`;
+        const outputPath = path.join(generatedPath, outputFile);
+        fs.writeFileSync(outputPath, imageBuffer);
+
+        // Update job
+        imageJobs.set(jobId, {
+            ...imageJobs.get(jobId),
+            status: 'done',
+            imageUrl: `/generated/${outputFile}`
+        });
+
+    } catch (err) {
+        console.error('Image generation error:', err.message);
     }
 });
 
