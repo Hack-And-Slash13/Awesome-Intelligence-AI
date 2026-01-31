@@ -124,22 +124,18 @@ async function handleGenerateImage() {
     addMessage(prompt, 'user');
     lockInput('Generating image...');
 
-    // Add placeholder message and KEEP reference to it
     const statusMessage = addMessage('⏳ Generating image...', 'ai');
 
     try {
-        const createRes = await fetch(`${API_BASE_URL}/api/image`, {
+        const res = await fetch(`${API_BASE_URL}/api/image`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt })
         });
 
-        if (!createRes.ok) {
-            throw new Error('Failed to start image generation');
-        }
+        if (!res.ok) throw new Error('Image generation failed');
 
-        const { jobId } = await createRes.json();
-        const imageUrl = await pollImageJob(jobId);
+        const { imageUrl } = await res.json();
 
         replaceMessageWithImage(statusMessage, imageUrl);
 
@@ -152,6 +148,7 @@ async function handleGenerateImage() {
         unlockInput();
     }
 }
+
 
 // ============================================
 // IMAGE JOB POLLING
